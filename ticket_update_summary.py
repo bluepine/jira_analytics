@@ -31,23 +31,28 @@ def last_relevant_update_date(issue):
     else:
         return None
 
-def print_issue_summary(issue):
+def print_issue_summary(issue, cutoff_date=None):
         changelog = issue.changelog
         header_printed = False
         attachment_dict = {}
         for history in changelog.histories:
             for item in history.items:
+                if cutoff_date:
+                    d = dateutil.parser.parse(history.created.strip()).replace(tzinfo=None)
+                    if d < cutoff_date:
+                        continue
                 if item.field in HISTORY_ITEM_FIELDS:
                     if not header_printed:
-                        print issue.key, issue.fields.summary, issue.fields.assignee, '{'
+                        print u"{0}: {1} -> {2} {{".format(issue.key, issue.fields.summary, issue.fields.assignee)
                         if None != issue.fields.attachment:
                             for a in issue.fields.attachment:
                                 attachment_dict[to_str(a.filename)] = a.content
                         header_printed = True
+                    # print item.field, history.created, item.fromString, item.toString
                     if item.field == 'Attachment' and to_str(item.toString) in attachment_dict.keys():
-                        print ' ', item.field, 'Date:' + to_str(history.created) + ' From:' + to_str(item.fromString) + ' To:' + attachment_dict[item.toString]
+                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, attachment_dict[to_str(item.toString)]).encode('ascii', 'ignore')
                     else:
-                        print ' ', item.field, 'Date:' + to_str(history.created) + ' From:' + to_str(item.fromString) + ' To:' + to_str(item.toString)
+                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, item.toString).encode('ascii', 'ignore')
         if header_printed:
             print '}\n'
 
@@ -65,6 +70,6 @@ if __name__ == "__main__":
     zipped = zip(issues, [last_relevant_update_date(issue) for issue in issues])
     zipped = filter(lambda x: x[1] and x[1] > date_days_range_start, zipped)
     zipped = sorted(zipped, key = lambda x: x[1], reverse=True)
-    print str(len(zipped)) + ' issues were updated in the last ' + str(days_range) + ' days for ' + ', '.join(list(HISTORY_ITEM_FIELDS))
+    print u"{0} issues were updated in the last {1} days for {2}".format(str(len(zipped)), str(days_range), u", ".join(list(HISTORY_ITEM_FIELDS))).encode('ascii', 'ignore')
     for x in zipped:
-        print_issue_summary(x[0])
+        print_issue_summary(x[0], date_days_range_start)
