@@ -12,7 +12,7 @@ def to_str(obj):
     if None == obj:
         return 'None'
     else:
-        if isinstance(obj, str):
+        if isinstance(obj, basestring):
             return obj.strip()
         else:
             return str(obj).strip()
@@ -30,7 +30,7 @@ def last_relevant_update_date(issue):
         return last_date.replace(tzinfo=None)
     else:
         return None
-        
+
 def print_issue_summary(issue):
         changelog = issue.changelog
         header_printed = False
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     LARGE_NUMBER = 100000
     options = {
         'server': 'http://tickets.turner.com'}
-    days_range = 14
+    days_range = 1
     date_days_range_start = datetime.now() - timedelta(days=days_range)
     #make sure your machine's local time zone matches that of jira server!
     jira = JIRA(options, basic_auth=(os.environ['JIRA_USERNAME'], os.environ['JIRA_PASSWORD']))
