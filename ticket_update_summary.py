@@ -43,16 +43,16 @@ def print_issue_summary(issue, cutoff_date=None):
                         continue
                 if item.field in HISTORY_ITEM_FIELDS:
                     if not header_printed:
-                        print u"{0}: {1} -> {2} {{".format(issue.key, issue.fields.summary, issue.fields.assignee)
+                        print u"{0}: {1} -> {2} {{".format(issue.key, issue.fields.summary, issue.fields.assignee).encode('utf-8', 'ignore')
                         if None != issue.fields.attachment:
                             for a in issue.fields.attachment:
                                 attachment_dict[to_str(a.filename)] = a.content
                         header_printed = True
                     # print item.field, history.created, item.fromString, item.toString
                     if item.field == 'Attachment' and to_str(item.toString) in attachment_dict.keys():
-                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, attachment_dict[to_str(item.toString)]).encode('ascii', 'ignore')
+                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, attachment_dict[to_str(item.toString)]).encode('utf-8', 'ignore')
                     else:
-                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, item.toString).encode('ascii', 'ignore')
+                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, item.toString).encode('utf-8', 'ignore')
         if header_printed:
             print '}\n'
 
@@ -61,15 +61,15 @@ if __name__ == "__main__":
     LARGE_NUMBER = 100000
     options = {
         'server': 'http://tickets.turner.com'}
-    days_range = 1
+    days_range = 100
     date_days_range_start = datetime.now() - timedelta(days=days_range)
     #make sure your machine's local time zone matches that of jira server!
     jira = JIRA(options, basic_auth=(os.environ['JIRA_USERNAME'], os.environ['JIRA_PASSWORD']))
     #update your query here using jql: https://confluence.atlassian.com/jiracore/blog/2015/07/search-jira-like-a-boss-with-jql
-    issues = jira.search_issues('project=TITAN and updated >= -' + str(days_range) + 'd order by updated desc', maxResults=LARGE_NUMBER, fields='updated,assignee,summary,attachments', expand='changelog')
+    issues = jira.search_issues('project=TITAN and assignee = swei order by updated desc', maxResults=LARGE_NUMBER, fields='updated,assignee,summary,attachments', expand='changelog')
     zipped = zip(issues, [last_relevant_update_date(issue) for issue in issues])
     zipped = filter(lambda x: x[1] and x[1] > date_days_range_start, zipped)
     zipped = sorted(zipped, key = lambda x: x[1], reverse=True)
-    print u"{0} issues were updated in the last {1} days for {2}".format(str(len(zipped)), str(days_range), u", ".join(list(HISTORY_ITEM_FIELDS))).encode('ascii', 'ignore')
+    #print u"{0} issues were updated in the last {1} days for {2}".format(str(len(zipped)), str(days_range), u", ".join(list(HISTORY_ITEM_FIELDS))).encode('ascii', 'ignore')
     for x in zipped:
         print_issue_summary(x[0], date_days_range_start)
