@@ -32,6 +32,7 @@ def last_relevant_update_date(issue):
         return None
 
 def print_issue_summary(issue, cutoff_date=None):
+        ret = ''
         changelog = issue.changelog
         header_printed = False
         attachment_dict = {}
@@ -43,33 +44,40 @@ def print_issue_summary(issue, cutoff_date=None):
                         continue
                 if item.field in HISTORY_ITEM_FIELDS:
                     if not header_printed:
-                        print u"{0}: {1} -> {2} {{".format(issue.key, issue.fields.summary, issue.fields.assignee)
+                        ret += u"{0}: {1} -> {2} {{".format(issue.key, issue.fields.summary, issue.fields.assignee).encode('ascii', 'ignore') + '\n'
                         if None != issue.fields.attachment:
                             for a in issue.fields.attachment:
                                 attachment_dict[to_str(a.filename)] = a.content
                         header_printed = True
                     # print item.field, history.created, item.fromString, item.toString
                     if item.field == 'Attachment' and to_str(item.toString) in attachment_dict.keys():
-                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, attachment_dict[to_str(item.toString)]).encode('ascii', 'ignore')
+                        ret += u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, attachment_dict[to_str(item.toString)]).encode('ascii', 'ignore') + '\n'
                     else:
-                        print u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, item.toString).encode('ascii', 'ignore')
+                        ret += u"    {0} updated {1} from {2} to {3}".format(item.field, to_str(history.created), item.fromString, item.toString).encode('ascii', 'ignore') + '\n'
         if header_printed:
-            print '}\n'
+            ret += '}\n'
+        return ret
 
-
-if __name__ == "__main__":
+def query(q):
     LARGE_NUMBER = 100000
     options = {
         'server': 'http://tickets.turner.com'}
-    days_range = 1
+    days_range = 70
     date_days_range_start = datetime.now() - timedelta(days=days_range)
     #make sure your machine's local time zone matches that of jira server!
-    jira = JIRA(options, basic_auth=(os.environ['JIRA_USERNAME'], os.environ['JIRA_PASSWORD']))
+    #jira = JIRA(options, basic_auth=(os.environ['JIRA_USERNAME'], os.environ['JIRA_PASSWORD']))
+    jira = JIRA(options)
     #update your query here using jql: https://confluence.atlassian.com/jiracore/blog/2015/07/search-jira-like-a-boss-with-jql
-    issues = jira.search_issues('project=TITAN and updated >= -' + str(days_range) + 'd order by updated desc', maxResults=LARGE_NUMBER, fields='updated,assignee,summary,attachments', expand='changelog')
+    #project = TITAN AND resolution = Unresolved and (assignee=c-expansion-tvu or assignee=c-nbapossible-kday or assignee=swei) ORDER BY priority DESC, updated DESC
+    issues = jira.search_issues(q, maxResults=LARGE_NUMBER, fields='updated,assignee,summary,attachments', expand='changelog')
     zipped = zip(issues, [last_relevant_update_date(issue) for issue in issues])
     zipped = filter(lambda x: x[1] and x[1] > date_days_range_start, zipped)
     zipped = sorted(zipped, key = lambda x: x[1], reverse=True)
-    print u"{0} issues were updated in the last {1} days for {2}".format(str(len(zipped)), str(days_range), u", ".join(list(HISTORY_ITEM_FIELDS))).encode('ascii', 'ignore')
+    ret = u"{0} issues were updated in the last {1} days for {2}".format(str(len(zipped)), str(days_range), u", ".join(list(HISTORY_ITEM_FIELDS))).encode('ascii', 'ignore') + '\n'
     for x in zipped:
-        print_issue_summary(x[0], date_days_range_start)
+        ret += print_issue_summary(x[0], date_days_range_start)
+    return ret
+
+
+if __name__ == "__main__":
+    print query('project = "CNN Android Titan Project" and assignee = swei and status != Done and status != QA order by updated desc')
