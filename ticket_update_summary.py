@@ -62,7 +62,7 @@ def query(q):
     LARGE_NUMBER = 100000
     options = {
         'server': 'http://tickets.turner.com'}
-    days_range = 70
+    days_range = 100
     date_days_range_start = datetime.now() - timedelta(days=days_range)
     #make sure your machine's local time zone matches that of jira server!
     #jira = JIRA(options, basic_auth=(os.environ['JIRA_USERNAME'], os.environ['JIRA_PASSWORD']))
